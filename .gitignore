@@ -1,2 +1,4 @@
 .direnv/*
 __pycache__/*
+flake.lock
+*/__pycache__/*
