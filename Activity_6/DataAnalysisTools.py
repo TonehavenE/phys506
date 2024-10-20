@@ -1,3 +1,10 @@
+"""
+PHYS 506 Activity 6 - Data Analysis Tools
+
+For Professor Butbaia
+Authors: Luke Abanilla, Eben Quenneville, Augustus Vigorito
+Date: 2024-10-20
+"""
 import math
 import numpy as np
 
@@ -170,7 +177,7 @@ def lineFitWt(x: list[float], y: list[float], dy: list[float]) -> tuple[float, f
     - dy: list, the uncertainty of y measurements
 
     Returns:
-    - tuple[float, float]:
+    - tuple[float, float, float, float] = [m, b, mUnc, bUnc]:
         - float, m: the slope of the line of best fit
         - float, b: the y-intercept of the line of best fit
         - float: mUnc: the uncertainty of the slope
@@ -179,18 +186,20 @@ def lineFitWt(x: list[float], y: list[float], dy: list[float]) -> tuple[float, f
     assert len(x) == len(y)
     assert len(y) == len(dy)
 
-    w = [1/(i**2) for i in dy]
-    N = len(x)
-
+    w = [1/(i**2) for i in dy] # generates weights
+    N = len(x) # number of data points
+    
+    # each sum in the expression given in the activity
     S_wxx = sum([w[i] * x[i]**2 for i in range(N)])
     S_wy = sum([w[i] * y[i] for i in range(N)])
     S_wx = sum([w[i] * x[i] for i in range(N)])
     S_wxy = sum([w[i] * x[i] * y[i] for i in range(N)])
     S_w = sum(w)
 
+    # calculate the actual values
     m_w = (S_w * S_wxy - S_wx * S_wy)/(S_w * S_wxx - (S_wx)**2)
     b_w = (S_wxx * S_wy - S_wx * S_wxy)/(S_w * S_wxx - (S_wx)**2)
-    
+
     mUnc = math.sqrt( S_w / (S_w * S_wxx - S_wx**2) )
     bUnc = math.sqrt( S_wxx / (S_w * S_wxx - S_wx**2) )
 

@@ -1,3 +1,10 @@
+"""
+PHYS 506 Activity 6 - Problem 1
+
+For Professor Butbaia
+Authors: Luke Abanilla, Eben Quenneville, Augustus Vigorito
+Date: 2024-10-20
+"""
 import DataAnalysisTools as dat
 
 def main():

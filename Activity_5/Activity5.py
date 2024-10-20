@@ -1,3 +1,11 @@
+"""
+PHYS 506 Activity 5
+For Professor Butbaia
+
+Authors: Luke Abanilla, Eben Quenneville, Augustus Vigorito
+Date: 2024-10-20
+"""
+
 import math
 
 # Problem 1
@@ -98,6 +106,7 @@ def problem5():
     print(f"The primes under {limit} are: {primes}")
 
 if __name__ == "__main__":
+    # run all problems
     problem1()
     problem2()
     problem3()
