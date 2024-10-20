@@ -1,3 +1,11 @@
+"""
+PHYS 506 Activity 6 - Problem 2
+
+For Professor Butbaia
+Authors: Luke Abanilla, Eben Quenneville, Augustus Vigorito
+Date: 2024-10-20
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import DataAnalysisTools as dat
