@@ -57,7 +57,7 @@ def main():
     print(f"lineFitWt results:\n* m = ({m1} ± {m1Unc}) V/Ohm\n* b = ({b1} ± {b1Unc}) V")
 
     plt.legend()
-    plt.show()
+    # plt.show()
     plt.savefig("Activity6_Problem4.png")
     
 if __name__ == "__main__":
