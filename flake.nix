@@ -12,6 +12,7 @@
             pkgs.python3
             pkgs.python312Packages.numpy
             pkgs.python312Packages.matplotlib
+            pkgs.python312Packages.scipy
           ];
         };
       });
