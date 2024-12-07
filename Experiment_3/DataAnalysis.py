@@ -4,10 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np 
 import re
 
-def gus_algorithm(voltages, voltage_uncs, currents, current_uncs, dark_v, dark_v_uncs, dark_c, dark_c_uncs):
-    # The idea of the following algorithm is to calculate a curve for current vs voltage that is
-    # shifted by the piecewise dark characteristic curve, and then find 0s of that corrected curve
-    # these should be the intersection values between the two data sets
+def gus_algorithm(voltages: list[float], voltage_uncs: list[float], currents: list[float], current_uncs: list[float], dark_v: list[float], dark_v_uncs: list[float], dark_c: list[float], dark_c_uncs: list[float]) -> tuple[float, float]:
+    """
+    The idea of the following algorithm is to calculate a curve for current vs voltage that is
+    shifted by the piecewise dark characteristic curve, and then find 0s of that corrected curve.
+    These should be the intersection values between the two data sets.
+
+    Takes in the current, voltage, dark characteristic current and voltage, and each corresponding uncertainty as lists of floats
+    Returns a tuple of the stopping voltage and its uncertainty as floats
+    """
 
     def linear(x, x1, y1, x2, y2):
         # linear equation f(x) = m(x - x1) + y1
@@ -54,8 +59,12 @@ def gus_algorithm(voltages, voltage_uncs, currents, current_uncs, dark_v, dark_v
             cd2_unc = dark_c_uncs[i]
             # v_s = linear_for_x(0, voltages[i], corrected[i], voltages[i-1], corrected[i-1])
             break
+
+    # we now have our 8 data points and their corresponding uncertainties
+    # (the x, y points of the light curve and dark curve on either side of the 0)
+    # we can calculate the stopping voltage from this
     
-    # calculate uncertainty
+    # CALCULATE UNCERTAINTY 
     md = (cd1 - cd2)/(vd1 - vd2)
     ml = (cl1 - cl2)/(vl1 - vl2)
     alpha = md * vd1 - ml * vl1 + cl1 - cd1 # just a shorthand
@@ -105,90 +114,138 @@ def gus_algorithm(voltages, voltage_uncs, currents, current_uncs, dark_v, dark_v
 
     return (v_s, v_s_unc)
 
-def digital_data_plot():
+def digital_data_plot() -> list[tuple[float, float, float, float]]:
+    """
+    Reads the data from the Model 67401 apparatus, calculates the stopping voltages, plots it, and returns the stopping potential with corresponding wavelength.
+
+    Returns list[tuple(λ, δλ, V_s, δV_s)]
+    """
     print("\n--- DIGITAL DATA ---\n")
-    # files = ["Analog3650", "Analog4047", "Analog4358", "Analog5461", "Analog5770"]
     files = ["RedLED_611_nm", "YellowLED_588_nm", "GreenLED_525_nm", "CyanLED_505_nm", "BlueLED_472_nm"]
     stopping_voltages = []
-    # files = ["RedLED_611_nm", "YellowLED_588_nm"]
 
-    fig, axis = plt.subplots(1, len(files), sharey=True)
-    fig.suptitle("Digital Experimental Data")
-    fig.supxlabel("Accelerating Voltage (V)")
-    fig.supylabel("Photocurrent (A)")
+    # Create a 2x3 layout with an appropriate figure size
+    fig, axis = plt.subplots(2, 3, sharey=True, figsize=(15, 10))
+    fig.suptitle("Digital Experimental Data", fontsize=16)
+    fig.supxlabel("Accelerating Voltage (V)", fontsize=14)
+    fig.supylabel("Photocurrent (A)", fontsize=14)
+    plt.subplots_adjust(wspace=0.4, hspace=0.4)  # Adjust spacing between subplots
 
     for index, file in enumerate(files):
-        wavelength = float(file.split("_")[1])
+        row, col = divmod(index, 3)  # Determine the row and column for the subplot
+
+        wavelength = float(file.split("_")[1]) # extract wavelength from filename
         wavelength_unc = 0.05 * wavelength
+
+        # read file
         voltages = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=0, skiprows=1)
         voltage_unc = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=1, skiprows=1)
         currents = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=2, skiprows=1)
-        currents *= 10**(-9)
+        currents *= 10**(-9) # convert to meters
         current_unc = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=3, skiprows=1)
-        current_unc *= 10**(-9)
+        current_unc *= 10**(-9) # convert to meters
 
-        # manufacture dark characteristic data to match as 0 - this works for the digital measurement
-        # we found experimentally that the dark current is 0 everywhere for this instrument
+        # manufacutre dark data because we found with this instrument that the dark current was always exactly 0, no matter the voltage
         dark_v = voltages
         dark_v_unc = [0 for _ in voltage_unc]
         dark_c = [0 for _ in currents]
         dark_c_unc = [0 for _ in current_unc]
 
-        axis[index].errorbar(voltages, currents, xerr=voltage_unc, yerr=current_unc)
-        axis[index].errorbar(dark_v, dark_c, xerr=dark_v_unc, yerr=dark_c_unc)
-        axis[index].set_title(f"{file}")
+        # plot this subplot
+        axis[row, col].errorbar(voltages, currents, xerr=voltage_unc, yerr=current_unc, label="Data" if index == 0 else "__nolabel__")
+        axis[row, col].errorbar(dark_v, dark_c, xerr=dark_v_unc, yerr=dark_c_unc, label="Dark Characteristic" if index == 0 else "__nolabel__")
+        axis[row, col].set_title(f"{file}", fontsize=12)
 
+        # plot the stopping voltage, found using Gus's algorithm above
         stopping_voltage, stopping_voltage_unc = gus_algorithm(voltages, voltage_unc, currents, current_unc, dark_v, dark_v_unc, dark_c, dark_c_unc)
-        # print(f"Gus's Algorithm: {stopping_voltage} ± {stopping_voltage_unc}")
-        axis[index].errorbar([stopping_voltage, stopping_voltage], [min(currents), max(currents)], xerr=[stopping_voltage_unc, stopping_voltage_unc]) 
+        axis[row, col].errorbar([stopping_voltage, stopping_voltage], [min(currents), max(currents)], 
+                                xerr=[stopping_voltage_unc, stopping_voltage_unc], label="Stopping Voltage" if index == 0 else "__nolabel__") 
+        # append to our output data
         stopping_voltages.append((wavelength, wavelength_unc, stopping_voltage, stopping_voltage_unc))
 
-        print(f"({wavelength:.4f} ± {wavelength_unc:.4f}) nm: ({stopping_voltage:.4f} ± {stopping_voltage_unc:.4f}) v")
-        # print("")
-    
+    # hide unused subplot(s) if there are fewer than 6 files
+    for index in range(len(files), 6):
+        row, col = divmod(index, 3)
+        fig.delaxes(axis[row, col])  # remove unused subplot
+
+    # save plot
+    fig.legend(loc="upper right", fontsize=10)
+    fig.savefig("Digital_Data_2x3.png", dpi=300, bbox_inches="tight") 
+
+    # print the data for reference
+    for (wavelength, wavelength_unc, stopping_voltage, stopping_voltage_unc) in stopping_voltages:
+        print(f"({wavelength:.4f} ± {wavelength_unc:.4f}) nm: ({stopping_voltage:.4f} ± {stopping_voltage_unc:.4f}) V")
+
     return stopping_voltages
 
-def analog_data_plot():
+
+def analog_data_plot() -> list[tuple[float, float, float, float]]:
+    """
+    Reads the data from the Model PCNL01 apparatus, calculates the stopping voltages, plots it, and returns the stopping potential with corresponding wavelength.
+
+    Returns list[tuple(λ, δλ, V_s, δV_s)]
+    """
+
     print("\n--- ANALOG DATA ---\n")
 
+    # List of files to process, ordered from shortest to longest wavelength
     files = ["Analog3650A", "Analog4047A", "Analog4358A", "Analog5461A", "Analog5770A"][::-1]
 
     data = []
-    
 
+    # Load dark characteristic data (voltage and current with uncertainties)
     dark_v = np.loadtxt(f"data/AnalogDark.csv", delimiter=',', usecols=0, skiprows=1)
     dark_v_unc = np.abs(np.loadtxt(f"data/AnalogDark.csv", delimiter=',', usecols=0, skiprows=1))
     dark_c = np.loadtxt(f"data/AnalogDark.csv", delimiter=',', usecols=0, skiprows=1)
-    dark_c *= 10**(-14)
+    dark_c *= 10**(-14)  # Convert to appropriate units
     dark_c_unc = np.abs(np.loadtxt(f"data/AnalogDark.csv", delimiter=',', usecols=0, skiprows=1))
-    dark_c_unc *= 10**(-14)
+    dark_c_unc *= 10**(-14)  # Convert uncertainties to appropriate units
 
-    fig, axis = plt.subplots(1, len(files), sharey=True)
-    fig.suptitle("Analog Experimental Data")
-    fig.supxlabel("Accelerating Voltage (V)")
-    fig.supylabel("Photocurrent (A)")
+    # Create a 2x3 layout with an appropriate figure size
+    fig, axis = plt.subplots(2, 3, sharey=True, figsize=(15, 10))
+    fig.suptitle("Analog Experimental Data", fontsize=16)
+    fig.supxlabel("Accelerating Voltage (V)", fontsize=14)
+    fig.supylabel("Photocurrent (A)", fontsize=14)
+    plt.subplots_adjust(wspace=0.4, hspace=0.4)  # Adjust spacing between subplots
 
     for index, file in enumerate(files):
-        wavelength = float(re.sub('[A-Za-z]', '', file)) / 10
+        row, col = divmod(index, 3)  # Determine the row and column for the subplot
+
+        # Extract wavelength and calculate its uncertainty
+        wavelength = float(re.sub('[A-Za-z]', '', file)) / 10  # Convert to nm
         wavelength_unc = 0.05 * wavelength
+
+        # Read data from the file
         voltages = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=0, skiprows=1)
         voltage_unc = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=1, skiprows=1)
         currents = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=2, skiprows=1)
-        currents *= 10**(-14)
+        currents *= 10**(-14)  # Convert currents to appropriate units
         current_unc = np.loadtxt(f"data/{file}.csv", delimiter=',', usecols=3, skiprows=1)
-        current_unc *= 10**(-14)
+        current_unc *= 10**(-14)  # Convert uncertainties to appropriate units
 
+        # Plot the experimental data for this file
+        axis[row, col].errorbar(voltages, currents, xerr=voltage_unc, yerr=current_unc, label="Data" if index == 0 else "__nolabel__")
+        # Plot the dark characteristic data
+        axis[row, col].errorbar(dark_v, dark_c, xerr=dark_v_unc, yerr=dark_c_unc, label="Dark Characteristic" if index == 0 else "__nolabel__")
+        axis[row, col].set_title(f"{file}", fontsize=12)
 
-        axis[index].errorbar(voltages, currents, xerr=voltage_unc, yerr=current_unc)
-        axis[index].errorbar(dark_v, dark_c, xerr=dark_v_unc, yerr=dark_c_unc)
-        axis[index].set_title(f"{file}")
-
+        # Calculate and plot the stopping voltage using Gus's algorithm
         stopping_voltage, stopping_voltage_unc = gus_algorithm(voltages, voltage_unc, currents, current_unc, dark_v, dark_v_unc, dark_c, dark_c_unc)
-        axis[index].errorbar([stopping_voltage, stopping_voltage], [min(currents), max(currents)], xerr=[stopping_voltage_unc, stopping_voltage_unc]) 
+        axis[row, col].errorbar([stopping_voltage, stopping_voltage], [min(currents), max(currents)], 
+                                xerr=[stopping_voltage_unc, stopping_voltage_unc], label="Stopping Voltage" if index == 0 else "__nolabel__") 
+        
+        # Append the results to the output data
         data.append((wavelength, wavelength_unc, stopping_voltage, stopping_voltage_unc))
-        print(f"({wavelength:.4f} ± {wavelength_unc:.4f}) nm: ({stopping_voltage:.4f} ± {stopping_voltage_unc:.4f}) v")
-        # print("")
-    
+        print(f"({wavelength:.4f} ± {wavelength_unc:.4f}) nm: ({stopping_voltage:.4f} ± {stopping_voltage_unc:.4f}) V")
+
+    # Hide unused subplot(s) if there are fewer than 6 files
+    for index in range(len(files), 6):
+        row, col = divmod(index, 3)
+        fig.delaxes(axis[row, col])  # Remove unused subplot
+
+    # Save the plot with a descriptive filename
+    fig.legend(loc="upper right", fontsize=10)
+    fig.savefig("Analog_Data_2x3.png", dpi=300, bbox_inches="tight") 
 
     return data
 
@@ -226,7 +283,7 @@ def stopping_potential_vs_frequency(data: list[tuple[float, float, float, float]
     frequency_uncs = [sqrt(((-c / (wavelengths[j]**2)) * wavelength_uncs[j])**2) for j in range(len(wavelengths))]
 
     # plot raw data
-    axis.errorbar(frequencies, voltages, xerr=frequency_uncs, yerr=voltage_uncs)
+    axis.errorbar(frequencies, voltages, xerr=frequency_uncs, yerr=voltage_uncs, label="Raw Data")
 
     # calculate line of best fit
     m, b, m_unc, b_unc = dat.lineFitWt(frequencies, voltages, voltage_uncs)
@@ -235,21 +292,62 @@ def stopping_potential_vs_frequency(data: list[tuple[float, float, float, float]
     line_x_coordinates = np.linspace(min(frequencies), max(frequencies), 100) # generate 100 evenly spaced points
     axis.plot(line_x_coordinates, line(line_x_coordinates), label="Chi Squared Fit")
     fig.legend()
+    fig.savefig("Stopping_Potential.png")
 
     print(f"Fit Quality: Q = {dat.fitQuality(frequencies, voltages, voltage_uncs, m, b)}")
     print(f"lineFitWt results:\n* m = ({m} ± {m_unc}) V/Hz\n* b = ({b} ± {b_unc}) V")
 
+
+    print("\n *** PLANCKS CONSTANT CALCULATION *** ")
     elementary_charge = 1.602176634 * 10**(-19) # NIST Value: https://physics.nist.gov/cgi-bin/cuu/Value?e
     elementary_charge_unc = 0
+
     h = m * elementary_charge
     h_unc = sqrt( (elementary_charge * m_unc)**2 + (m * elementary_charge_unc)**2 )
-    print(f"h = {h} ± {h_unc}")
-    
+    print(f"* h = {h:.2e} ± {h_unc:.0e}")
 
-# for data in (digital_data_plot() + analog_data_plot()):
-    # print(data)
-data = digital_data_plot()
-data = analog_data_plot()
-stopping_potential_vs_frequency(data)
-# plt.yscale('log')
-plt.show()
+    nist_h = 6.62607015 * 10**(-34) # units of J*s, see NIST
+    nist_h_unc = 0 # exact
+
+    h_del = abs(h - nist_h)
+    h_unc_sum = abs(h_unc + nist_h_unc)
+
+    print(f"* Our experimental value of `h` and the NIST value are in agreement: {h_del < h_unc_sum}")
+
+    percent_error = abs( (h - nist_h) / (nist_h)) * 100
+    print(f"* Percent Error: {percent_error}%")
+
+    
+    phi = b * elementary_charge
+    phi_unc = sqrt( (elementary_charge * b_unc)**2 + (b * elementary_charge_unc)**2 )
+    print(f"* ϕ = {phi:.2e} ± {phi_unc:.0e}")
+    
+    print("* Maximum Velocity")
+    mass_e = 9.1093837139 * 10**(-31) # mass of an electron, NIST value https://physics.nist.gov/cgi-bin/cuu/Value?me
+    mass_e_unc = 0.0000000028 * 10**(-31) # NIST
+
+    def velocity(f):
+        return ((2 * h * f - 2 * phi) / mass_e) ** (1/2)
+
+    def velocity_unc(f, f_unc):
+        m = (1/2) * ((2 * h * f - 2 * phi) / mass_e)**(- 1/2)
+
+        return sqrt(
+                ((m * 2 * f / mass_e) * h_unc) ** 2 +
+                ((m * 2 * h / mass_e) * f_unc) ** 2 +
+                ((m * -2 / mass_e) * phi_unc) ** 2
+                )
+
+    for i in range(len(frequencies)):
+        print(f"   * {wavelengths[i]}: {velocity(frequencies[i]):.3e} ± {velocity_unc(frequencies[i], frequency_uncs[i]):.0e}")
+
+def main():
+    # for data in (digital_data_plot() + analog_data_plot()):
+        # print(data)
+    data = analog_data_plot()
+    data = digital_data_plot()
+    stopping_potential_vs_frequency(data)
+    # plt.yscale('log')
+    # plt.show()
+
+main()
