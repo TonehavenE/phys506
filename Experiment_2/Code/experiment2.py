@@ -1,6 +1,8 @@
 import math
 from numpy import mean
 import DataAnalysisTools as dat
+import matplotlib.pyplot as plt 
+from matplotlib.ticker import ScalarFormatter
 
 magnetic_constant = 1.25663706 * 10**(-6) # m kg / (s^2 A^2)
 number_turns = 130
@@ -88,7 +90,11 @@ def main():
 
     total_charge_to_mass = []
     total_charge_to_mass_unc = []
-    for x in ["200v.txt", "300v.txt", "400v.txt", "500v.txt"]:
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+    axes = axes.flatten()
+
+    for subplot, x in enumerate(["200v.txt", "300v.txt", "400v.txt", "500v.txt"]):
         voltage, beam_loop_diameters, currents = read_voltage_data(x)
 
         voltage_unc = 0.05 * voltage # 5% of voltage?
@@ -101,13 +107,28 @@ def main():
         charge_to_mass_data = []
         for i in range(len(beam_loop_diameters)):
             r = beam_loop_diameters[i] / 2
-            r_unc = 0.3 / 100 # 0.3 cm -> meters
+            r_unc = 0.3 / 100 # 0.3 cm -> meters, determined by the physical demarcations of the apparatus
             B, B_unc = B_data[i]
             c_to_m = charge_to_mass(voltage, r, B)
             c_to_m_unc = charge_to_mass_unc(voltage, voltage_unc, r, r_unc, B, B_unc)
             total_charge_to_mass.append(c_to_m)
             total_charge_to_mass_unc.append(c_to_m_unc)
             charge_to_mass_data.append((c_to_m, c_to_m_unc))
+
+        # Plot magnetic field data with error bars
+        axes[subplot].errorbar(
+            x=currents, 
+            y=[B[0] for B in B_data], 
+            xerr=[0.05 * c for c in currents], 
+            yerr=[B[1] for B in B_data],
+            fmt='o',label=f"{x.split('.')[0]}"
+        )
+        
+        # Labeling
+        axes[subplot].set_title(f"Voltage: {x.split('v')[0]} V")
+        axes[subplot].set_xlabel("Current (Amps)")
+        axes[subplot].set_ylabel("Magnetic Field (Teslas)")
+        # axes[subplot].legend()
 
         print(f"MAGNETIC FIELD DATA")
         for b, b_unc in B_data:
@@ -118,6 +139,17 @@ def main():
         print("CHARGE TO MASS DATA")
         for c_to_m, c_to_m_unc in charge_to_mass_data:
             print(f"{c_to_m:.2e} ± {c_to_m_unc:.0e}")
+
+
+    # Set y-axis to scientific notation
+    for ax in axes:
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+    # Adjust layout and display plot
+    # plt.show()
+    plt.savefig("MagneticField_vs_Current.png")
+
 
     # now calculate stuff
     weights = [1/unc**2 for unc in total_charge_to_mass_unc]
