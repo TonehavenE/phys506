@@ -1,12 +1,58 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+\documentclass[prX,nofootinbib,notitlepage,12pt]{revtex4-1}
+
+% For two-column format (which usually looks more professional):
+%\documentclass[twocolumn,prX,nofootinbib,notitlepage]{revtex4-1}
+
+% Note: The revtex4-1 document class includes a variety of Physics Journal
+% styles. The option prX is specifies the Physical Review X journal style.
+
+
+%*************************** Load Packages *******************************
+% Note: Package descriptions and usage documentation can be found online
+% at https://ctan.org/. Just use the site's search bar to search for the
+% package
+
+%------------------ Extending default LaTeX Structures -------------------
+\usepackage{enumerate}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{hyperref}
+\usepackage{subfiles}
 \usepackage{enumitem}
 
-\title{PHYS 506 - Experiment 1}
-\author{Luke Abanilla, Eben Quenneville, Augustus Vigorito}
-\date{November 2024}
+%------------------------ Symbology \& Math ------------------------------
+\usepackage{amsmath, amsthm, amssymb, amsfonts}
+\usepackage{mathrsfs}
+\usepackage{array}
 
+%--------------------------- Graphics ------------------------------------
+\usepackage[dvips]{graphics}
+\usepackage{graphicx}
+\usepackage{color}
+
+
+%*************************************************************************
+%****************************** Body *************************************
+%*************************************************************************
 \begin{document}
+
+%************************ Document Settings ******************************
+
+%---------------------- Bibliography Settings ----------------------------
+\bibliographystyle{plain}
+
+
+%****************** Title Information \& Abstract ************************
+
+%--------------------------- Title ---------------------------------------
+\title{PHYS 506 - Experiment 1 Semi-Report}
+
+%----------------------- Author Information ------------------------------
+\author{Luke Abanilla}%
+\author{Eben Quenneville}
+\author{Augustus Vigorito}
+\affiliation{Department of Physics, University of New Hampshire,
+Durham, NH 03824, USA}
 
 \maketitle
 
@@ -35,16 +81,16 @@ For part 2 of the experiment we would want to attach the light source and the sp
 
 \section{Historical Notes}
 
-In your own words, discuss the historical aspects of the experiment from Part 2, as if you
-were writing a Historical Background section of a report or scientific article.
+\textbf{In your own words, discuss the historical aspects of the experiment from Part 2, as if you
+were writing a Historical Background section of a report or scientific article.}
 Some things worth considering:
 \begin{enumerate}
     \item What were the historical and scientific consequences of the original spectral lines experiments?
     \item Who first studied spectral lines?
     \item How has physics changed because of this then-newfound understanding of spectral lines?
 \end{enumerate}
-(It will be helpful to refer to your Modern Physics textbook, or other resources, to help you
-write a few paragraphs to answer these questions. This may require a little bit of research.)
+\textbf{\textit{(It will be helpful to refer to your Modern Physics textbook, or other resources, to help you
+write a few paragraphs to answer these questions. This may require a little bit of research.)}}
 
 \begin{enumerate}
     \item Following the founding of spectral analysis by Gustav Robert Kirchoff and Robert Bunsen, scientists were able to study the composition of matter and identify elements based on their spectral characteristics
@@ -56,16 +102,16 @@ write a few paragraphs to answer these questions. This may require a little bit 
 \pagebreak
 \section{Theoretical Background}
 
-In your own words, discuss the theoretical background of the experiment from Part 2, as if
+\textbf{In your own words, discuss the theoretical background of the experiment from Part 2, as if
 you were writing a Theoretical Background section of a report or scientific article.
-Consider answering and discussing the following questions:
+Consider answering and discussing the following questions:}
 \begin{enumerate}[label=(\alph*)]
 \item How is light emitted by the gas tube lamp? What physical mechanisms come into play
 here?
 \item How does a difraction grating separate incident light waves into spectra?
 \end{enumerate}
 
-Answering these questions may include the use of (and/or derivation of) equations.
+\textbf{Answering these questions may include the use of (and/or derivation of) equations.}
 
 
 In this lab, we used an apparatus that placed a gas tube between two terminals with a large voltage difference between them. The voltage excites the atoms of the gas to a higher energy state (from $n = 0$ to $n = 1, 2, \dots$.) These higher energy levels are not stable, however. They eventually decay, and the electrons return to the ground state. When the electrons drop back down to a lower energy level, they emit photons at a specific frequency determined by the drop in energy as governed by the equation
